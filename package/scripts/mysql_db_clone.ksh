@@ -55,26 +55,44 @@ else
 fi
 
 # create timestamp
-DATETIME=$(date +"%Y-%m-%d-%H-%M-%S")
+DATETIME=$(date +"%Y%m%d-%H%M%S")
 
 # filenames
-DUMP_FILE=${DUMP_FS}/mysql-dump-${DATETIME}.sql
+SRC_DUMP_FILE=${DUMP_FS}/src-${SRC_DBHOST}-${DATETIME}.sql
+DST_DUMP_FILE=${DUMP_FS}/dst-${DST_DBHOST}-${DATETIME}.sql
 RESTORE_FILE=${DUMP_FS}/restore.sql.$$
 
-echo "Dumping dataset (${SRC_DBNAME} @ ${SRC_DBHOST})"
-${DUMP_TOOL} -h ${SRC_DBHOST} -P ${SRC_DBPORT} -u ${SRC_DBUSER} ${SRC_DBPASSWD_OPT} ${DUMP_OPTIONS} ${SRC_DBNAME} > ${DUMP_FILE}
-exit_on_error $? "Dump dataset failed with error $?"
+#
+# dump source data
+#
+echo "Dumping source dataset (${SRC_DBNAME} @ ${SRC_DBHOST})"
+${DUMP_TOOL} -h ${SRC_DBHOST} -P ${SRC_DBPORT} -u ${SRC_DBUSER} ${SRC_DBPASSWD_OPT} ${DUMP_OPTIONS} ${SRC_DBNAME} > ${SRC_DUMP_FILE}
+exit_on_error $? "Dump source dataset failed with error $?"
 
-echo "Applying necessary rewrites..."
-cp ${DUMP_FILE} ${RESTORE_FILE}
+#
+# preserve destination data in case of an error
+#
+echo "Preserving destination dataset (${DST_DBNAME} @ ${DST_DBHOST})"
+${DUMP_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DUMP_OPTIONS} ${DST_DBNAME} > ${DST_DUMP_FILE}
+exit_on_error $? "Dump destination dataset failed with error $?"
+
+#
+# rewrites, not used ATM
+#
+#echo "Applying necessary rewrites..."
+cp ${SRC_DUMP_FILE} ${RESTORE_FILE}
 exit_on_error $? "Rewrite failed with error $?"
 
+#
+# restore the source to the destination
+#
 echo "Restoring dataset (${DST_DBNAME} @ ${DST_DBHOST})"
-#${RESTORE_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < xxx
+${RESTORE_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < ${RESTORE_FILE}
 exit_on_error $? "Restore dataset failed with error $?"
 
 # cleanup
-#rm -fr ${DUMP_FILE} // preserve the dump file
+#rm -fr ${SRC_DUMP_FILE} // preserve the source dump file
+#rm -fr ${DST_DUMP_FILE} // preserve the destination dump file
 rm -fr ${RESTORE_FILE}
 
 # all over
