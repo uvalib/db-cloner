@@ -96,7 +96,6 @@ exit_on_error $? "Restore dataset failed with error $?"
 rm -fr ${RESTORE_FILE}
 
 # all over
-echo "Terminating successfully"
 exit 0
 
 #

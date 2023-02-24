@@ -13,9 +13,11 @@ ensure_file_exists ${RUNNER}
 
 # run the cloner script
 ${RUNNER}
+res=$?
 
 # all over
-exit $?
+echo "Terminating with status ${res}"
+exit ${res}
 
 #
 # end of file

@@ -1,7 +1,7 @@
 FROM public.ecr.aws/docker/library/alpine:3.17
 
 # Add necessary packages
-RUN apk --update add bash tzdata mariadb-client postgresql-client ca-certificates && rm -fr /var/cache/apk/*
+RUN apk --update add bash tzdata mariadb-client postgresql-client ca-certificates aws-cli && rm -fr /var/cache/apk/*
 
 # Create the run user and group
 RUN addgroup --gid 18570 sse && adduser --uid 1984 docker -G sse -D
@@ -11,7 +11,7 @@ ENV TZ=UTC
 RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Specify home 
-ENV APP_HOME /db-cloner
+ENV APP_HOME /drupal-migrate-tools
 WORKDIR $APP_HOME
 
 # Create necessary directories
@@ -26,9 +26,6 @@ COPY data/container_bash_profile /home/docker/.profile
 
 # Specify the user
 USER docker
-
-# define startup script
-CMD scripts/entry.ksh
 
 #
 # end of file
