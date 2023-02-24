@@ -1,22 +1,17 @@
 #!/usr/bin/env bash
 
-# source the helper...
+# source the common helper
 DIR=$(dirname $0)
-. ${DIR}/helpers.ksh
+. ${DIR}/common.ksh
 
 # validate the environment
-if [ -z "${DBMODE}" ]; then
-   error_and_exit "no DBMODE; please define your database mode"
-fi
+ensure_var_defined "${DBMODE}" "DBMODE"
 
 # define the run script name
-RUNNER=${DIR}/${DBMODE}_db_cloner.ksh
+RUNNER=${DIR}/${DBMODE}_db_clone.ksh
+ensure_file_exists ${RUNNER}
 
-if [ ! -f ${RUNNER} ]; then
-   error_and_exit "no support for ${DBMODE} cloning"
-fi
-
-# run the optimizer script
+# run the cloner script
 ${RUNNER}
 
 # all over

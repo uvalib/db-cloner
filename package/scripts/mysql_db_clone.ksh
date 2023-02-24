@@ -1,92 +1,84 @@
 #!/usr/bin/env bash
 #
-# Runner process to do the db optimize
+# Runner process to do the mysql DB clone
 #
 
-# source the helper...
+#set -x
+
+# source the common helper
 DIR=$(dirname $0)
-. $DIR/helpers.ksh
+. $DIR/common.ksh
 
-# useful values
-MYNAME=$(basename $0)
+# ensure the necessary tools exist
+DUMP_TOOL=mysqldump
+ensure_tool_available ${DUMP_TOOL}
+RESTORE_TOOL=mysql
+ensure_tool_available ${RESTORE_TOOL}
 
-# validate the environment
-if [ -z "$DBHOST" ]; then
-   error_and_exit "no DBHOST; please define your database host"
+DUMP_OPTIONS="--flush-privileges --routines"
+RESTORE_OPTIONS=""
+
+# validate the source environment
+ensure_var_defined "${SRC_DBHOST}" "SRC_DBHOST"
+ensure_var_defined "${SRC_DBPORT}" "SRC_DBPORT"
+ensure_var_defined "${SRC_DBNAME}" "SRC_DBNAME"
+ensure_var_defined "${SRC_DBUSER}" "SRC_DBUSER"
+
+# validate the destination environment
+ensure_var_defined "${DST_DBHOST}" "DST_DBHOST"
+ensure_var_defined "${DST_DBPORT}" "DST_DBPORT"
+ensure_var_defined "${DST_DBNAME}" "DST_DBNAME"
+ensure_var_defined "${DST_DBUSER}" "DST_DBUSER"
+
+# validate other environment needs
+ensure_var_defined "${DUMP_FS}" "DUMP_FS"
+
+# bit of sanity checking to prevent operator error
+if [ "${SRC_DBHOST}" == "${DST_DBHOST}" ]; then
+   if [ "${SRC_DBNAME}" == "${DST_DBNAME}" ]; then
+      error_and_exit "ERROR: source database cannot be the same as the destination database on the same host"
+   fi
 fi
-if [ -z "$DBUSER" ]; then
-   error_and_exit "no DBUSER; please define your database user"
-fi
-if [ -z "$DBPASSWD" ]; then
-#   error_and_exit "no DBPASSWD; please define your database password"
-   PASSWD_OPT=""
+
+# build the source password option
+if [ -z "${SRC_DBPASSWD}" ]; then
+   SRC_DBPASSWD_OPT=""
 else
-   PASSWD_OPT="--password=$DBPASSWD"
-fi
-if [ -z "$OPTIMIZE_TIME" ]; then
-   error_and_exit "no OPTIMIZE_TIME; please define your optimize time"
+   SRC_DBPASSWD_OPT="-p${SRC_DBPASSWD}"
 fi
 
-# the time we want the action to occur
-# this is specified in localtime
-export ACTION_TIME=$OPTIMIZE_TIME
-export ACTION_TIMEZONE="America/New_York"
+# build the destination password option
+if [ -z "${DST_DBPASSWD}" ]; then
+   DST_DBPASSWD_OPT=""
+else
+   DST_DBPASSWD_OPT="-p${DST_DBPASSWD}"
+fi
 
-# helpful message...
-banner_message "$MYNAME: starting up..."
+# create timestamp
+DATETIME=$(date +"%Y-%m-%d-%H-%M-%S")
 
-# forever...
-while true; do
+# filenames
+DUMP_FILE=${DUMP_FS}/mysql-dump-${DATETIME}.sql
+RESTORE_FILE=${DUMP_FS}/restore.sql.$$
 
-   # sleeping message...
-   banner_message "$MYNAME: sleeping until $ACTION_TIME ($ACTION_TIMEZONE)..."
-   sleep_until $ACTION_TIME $ACTION_TIMEZONE
+echo "Dumping dataset (${SRC_DBNAME} @ ${SRC_DBHOST})"
+${DUMP_TOOL} -h ${SRC_DBHOST} -P ${SRC_DBPORT} -u ${SRC_DBUSER} ${SRC_DBPASSWD_OPT} ${DUMP_OPTIONS} ${SRC_DBNAME} > ${DUMP_FILE}
+exit_on_error $? "Dump dataset failed with error $?"
 
-   # status message
-   banner_message "$MYNAME: starting DB check sequence"
+echo "Applying necessary rewrites..."
+cp ${DUMP_FILE} ${RESTORE_FILE}
+exit_on_error $? "Rewrite failed with error $?"
 
-   # do the database check
-   mysqlcheck -h $DBHOST -u $DBUSER $PASSWD_OPT --check --all-databases
-   res=$?
-   if [ $res -ne 0 ]; then
-      banner_message "ERROR: returned $res during database check; abandoning further processing"
-      sleep 60
-      continue
-   fi
+echo "Restoring dataset (${DST_DBNAME} @ ${DST_DBHOST})"
+#${RESTORE_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < xxx
+exit_on_error $? "Restore dataset failed with error $?"
 
-   # status message
-   banner_message "$MYNAME: starting DB optimize sequence"
+# cleanup
+#rm -fr ${DUMP_FILE} // preserve the dump file
+rm -fr ${RESTORE_FILE}
 
-   # do the database optimize
-   mysqlcheck -h $DBHOST -u $DBUSER $PASSWD_OPT --optimize --all-databases
-   res=$?
-   if [ $res -ne 0 ]; then
-      banner_message "ERROR: returned $res during database optimize; abandoning further processing"
-      sleep 60
-      continue
-   fi
-
-   # status message
-   banner_message "$MYNAME: starting DB analyze sequence"
-
-   # do the database analyze
-   mysqlcheck -h $DBHOST -u $DBUSER $PASSWD_OPT --analyze --all-databases
-   res=$?
-   if [ $res -ne 0 ]; then
-      banner_message "ERROR: returned $res during database analyze; abandoning further processing"
-      sleep 60
-      continue
-   fi
-
-   # ending message
-   banner_message "$MYNAME: sequence completes successfully"
-
-   # sleep for another minute
-   sleep 60
-
-done
-
-# never get here...
+# all over
+echo "Terminating successfully"
 exit 0
 
 #
