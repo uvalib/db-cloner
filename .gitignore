@@ -1,0 +1,4 @@
+env.*
+tmp
+package/scripts/build.ksh
+package/scripts/shell.ksh
