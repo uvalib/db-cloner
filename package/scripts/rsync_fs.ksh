@@ -50,7 +50,7 @@ exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
 
 # do the sync
 echo "Syncing ${SRC_REMOTE_FS} -> ${DST_REMOTE_FS}"
-${SYNC_TOOL} -av ${SRC_LOCAL_FS} ${DST_LOCAL_FS}/
+${SYNC_TOOL} -av ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
 exit_on_error $? "Syncing failed with error $?"
 
 # unmount the mounted filesystems
