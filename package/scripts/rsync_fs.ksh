@@ -41,8 +41,8 @@ ${SUDO_TOOL} mkdir ${DST_LOCAL_FS}
 ${SUDO_TOOL} chmod 777 ${DST_LOCAL_FS}
 
 # mount source filesystem
-#${SUDO_TOOL} ${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS} ${SRC_LOCAL_FS}
-#exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
+${SUDO_TOOL} ${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS} ${SRC_LOCAL_FS}
+exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
 
 # mount destination filesystem
 ${SUDO_TOOL} ${MOUNT_TOOL} ${DST_MOUNT_PARAMS} ${DST_REMOTE_FS} ${DST_LOCAL_FS}
@@ -50,10 +50,11 @@ exit_on_error $? "Mounting destination (${DST_REMOTE_FS}) failed with error $?"
 
 # do the sync
 #${SYNC_TOOL}
-#exit_on_error $? "Syncing failed with error $?"
+echo "Syncing ${SRC_REMOTE_FS} -> ${DST_REMOTE_FS}"
+exit_on_error $? "Syncing failed with error $?"
 
 # unmount the mounted filesystems
-#${SUDO_TOOL} ${UNMOUNT_TOOL} ${SRC_LOCAL_FS}
+${SUDO_TOOL} ${UNMOUNT_TOOL} ${SRC_LOCAL_FS}
 ${SUDO_TOOL} ${UNMOUNT_TOOL} ${DST_LOCAL_FS}
 
 # all over
