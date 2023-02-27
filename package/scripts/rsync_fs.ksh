@@ -50,8 +50,13 @@ exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
 
 # do the sync
 echo "Syncing ${SRC_REMOTE_FS} -> ${DST_REMOTE_FS}"
-${SYNC_TOOL} -av ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
-exit_on_error $? "Syncing failed with error $?"
+${SYNC_TOOL} --archive --quiet ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
+res=$?
+if [ ${res} -eq 23 ]; then
+   echo "WARNING: ignoring error ${res}"
+   res=0
+fi
+exit_on_error ${res} "Syncing failed with error $?"
 
 # unmount the mounted filesystems
 ${SUDO_TOOL} ${UNMOUNT_TOOL} ${SRC_LOCAL_FS}
