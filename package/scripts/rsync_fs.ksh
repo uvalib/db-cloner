@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # source the common helper
 DIR=$(dirname $0)
 . ${DIR}/common.ksh
