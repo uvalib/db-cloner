@@ -50,7 +50,7 @@ exit_on_error $? "Mounting destination (${DST_REMOTE_FS}) failed with error $?"
 
 # do the sync
 echo "Syncing ${SRC_REMOTE_FS} -> ${DST_REMOTE_FS}"
-${SYNC_TOOL} --archive ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
+${SYNC_TOOL} ${SYNC_OPTIONS:--archive} ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
 res=$?
 if [ ${res} -eq 23 ]; then
    echo "WARNING: ignoring error ${res}"
