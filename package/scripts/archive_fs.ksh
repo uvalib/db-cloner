@@ -16,13 +16,11 @@ ensure_tool_available ${ARCHIVE_TOOL}
 
 # validate the source environment
 ensure_var_defined "${SRC_REMOTE_FS}" "SRC_REMOTE_FS"
-ensure_var_defined "${SRC_REMOTE_PATH}" "SRC_REMOTE_PATH"
 ensure_var_defined "${SRC_LOCAL_FS}" "SRC_LOCAL_FS"
 ensure_var_defined "${SRC_MOUNT_PARAMS}" "SRC_MOUNT_PARAMS"
 
 # validate the destination environment
 ensure_var_defined "${DST_REMOTE_FS}" "DST_REMOTE_FS"
-ensure_var_defined "${DST_REMOTE_PATH}" "DST_REMOTE_PATH"
 ensure_var_defined "${DST_LOCAL_FS}" "DST_LOCAL_FS"
 ensure_var_defined "${DST_MOUNT_PARAMS}" "DST_MOUNT_PARAMS"
 
@@ -51,20 +49,20 @@ mkdir ${DST_LOCAL_FS}
 chmod 777 ${DST_LOCAL_FS}
 
 # mount source filesystem
-${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS}${SRC_REMOTE_PATH} ${SRC_LOCAL_FS}
+${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS} ${SRC_LOCAL_FS}
 exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
 
 # mount destination filesystem
-${MOUNT_TOOL} ${DST_MOUNT_PARAMS} ${DST_REMOTE_FS}${DST_REMOTE_PATH} ${DST_LOCAL_FS}
+${MOUNT_TOOL} ${DST_MOUNT_PARAMS} ${DST_REMOTE_FS} ${DST_LOCAL_FS}
 exit_on_error $? "Mounting destination (${DST_REMOTE_FS}) failed with error $?"
 
 # do the source archive
-echo "Archiving ${SRC_REMOTE_FS}${SRC_REMOTE_PATH} -> ${SRC_ARCHIVE_FILE}"
+echo "Archiving ${SRC_REMOTE_FS} -> ${SRC_ARCHIVE_FILE}"
 ${ARCHIVE_TOOL} czvf ${SRC_ARCHIVE_FILE} ${SRC_LOCAL_FS}/
 exit_on_error $? "Archiving source failed with error $?"
 
 # do the destination archive 
-echo "Archiving ${DST_REMOTE_FS}${DST_REMOTE_PATH} -> ${DST_ARCHIVE_FILE}"
+echo "Archiving ${DST_REMOTE_FS} -> ${DST_ARCHIVE_FILE}"
 ${ARCHIVE_TOOL} czvf ${DST_ARCHIVE_FILE} ${DST_LOCAL_FS}/
 exit_on_error $? "Archiving destination failed with error $?"
 
