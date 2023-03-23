@@ -14,6 +14,8 @@ DUMP_TOOL=mysqldump
 ensure_tool_available ${DUMP_TOOL}
 RESTORE_TOOL=mysql
 ensure_tool_available ${RESTORE_TOOL}
+COMPRESS_TOOL=gzip
+ensure_tool_available ${COMPRESS_TOOL}
 
 DUMP_OPTIONS="--flush-privileges --routines"
 RESTORE_OPTIONS=""
@@ -58,8 +60,8 @@ fi
 DATETIME=$(date +"%Y%m%d-%H%M%S")
 
 # filenames
-SRC_DUMP_FILE=${DUMP_FS}/src-${SRC_DBHOST}-${DATETIME}.sql
-DST_DUMP_FILE=${DUMP_FS}/dst-${DST_DBHOST}-${DATETIME}.sql
+SRC_DUMP_FILE=${DUMP_FS}/${DATETIME}-src.sql
+DST_DUMP_FILE=${DUMP_FS}/${DATETIME}-dst.sql
 RESTORE_FILE=${DUMP_FS}/restore.sql.$$
 
 #
@@ -90,9 +92,13 @@ echo "Restoring dataset (${DST_DBNAME} @ ${DST_DBHOST})"
 ${RESTORE_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < ${RESTORE_FILE}
 exit_on_error $? "Restore dataset failed with error $?"
 
+# compress the files
+${COMPRESS_TOOL} ${SRC_DUMP_FILE}
+exit_on_error $? "Compressing source failed with error $?"
+${COMPRESS_TOOL} ${DST_DUMP_FILE}
+exit_on_error $? "Compressing destination failed with error $?"
+
 # cleanup
-#rm -fr ${SRC_DUMP_FILE} // preserve the source dump file
-#rm -fr ${DST_DUMP_FILE} // preserve the destination dump file
 rm -fr ${RESTORE_FILE}
 
 # all over
