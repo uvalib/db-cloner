@@ -11,18 +11,23 @@ MOUNT_TOOL=mount
 ensure_tool_available ${MOUNT_TOOL}
 UNMOUNT_TOOL=umount
 ensure_tool_available ${UNMOUNT_TOOL}
-SYNC_TOOL=rsync
-ensure_tool_available ${SYNC_TOOL}
+ARCHIVE_TOOL=tar
+ensure_tool_available ${ARCHIVE_TOOL}
 
 # validate the source environment
 ensure_var_defined "${SRC_REMOTE_FS}" "SRC_REMOTE_FS"
+ensure_var_defined "${SRC_REMOTE_PATH}" "SRC_REMOTE_PATH"
 ensure_var_defined "${SRC_LOCAL_FS}" "SRC_LOCAL_FS"
 ensure_var_defined "${SRC_MOUNT_PARAMS}" "SRC_MOUNT_PARAMS"
 
 # validate the destination environment
 ensure_var_defined "${DST_REMOTE_FS}" "DST_REMOTE_FS"
+ensure_var_defined "${DST_REMOTE_PATH}" "DST_REMOTE_PATH"
 ensure_var_defined "${DST_LOCAL_FS}" "DST_LOCAL_FS"
 ensure_var_defined "${DST_MOUNT_PARAMS}" "DST_MOUNT_PARAMS"
+
+# validate other environment needs
+ensure_var_defined "${DUMP_FS}" "DUMP_FS"
 
 # bit of sanity checking to prevent operator error
 if [ "${SRC_REMOTE_FS}" == "${DST_REMOTE_FS}" ]; then
@@ -32,6 +37,13 @@ if [ "${SRC_LOCAL_FS}" == "${DST_LOCAL_FS}" ]; then
    error_and_exit "ERROR: source local filesystem cannot be the same as the destination local filesystem"
 fi
 
+# create timestamp
+DATETIME=$(date +"%Y%m%d-%H%M%S")
+
+# filenames
+SRC_ARCHIVE_FILE=${DUMP_FS}/${DATETIME}-src.tgz
+DST_ARCHIVE_FILE=${DUMP_FS}/${DATETIME}-dst.tgz
+
 # create local filesystem mount points
 mkdir ${SRC_LOCAL_FS}
 chmod 777 ${SRC_LOCAL_FS}
@@ -39,22 +51,22 @@ mkdir ${DST_LOCAL_FS}
 chmod 777 ${DST_LOCAL_FS}
 
 # mount source filesystem
-${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS} ${SRC_LOCAL_FS}
+${MOUNT_TOOL} ${SRC_MOUNT_PARAMS} ${SRC_REMOTE_FS}${SRC_REMOTE_PATH} ${SRC_LOCAL_FS}
 exit_on_error $? "Mounting source (${SRC_REMOTE_FS}) failed with error $?"
 
 # mount destination filesystem
-${MOUNT_TOOL} ${DST_MOUNT_PARAMS} ${DST_REMOTE_FS} ${DST_LOCAL_FS}
+${MOUNT_TOOL} ${DST_MOUNT_PARAMS} ${DST_REMOTE_FS}${DST_REMOTE_PATH} ${DST_LOCAL_FS}
 exit_on_error $? "Mounting destination (${DST_REMOTE_FS}) failed with error $?"
 
-# do the sync
-echo "Syncing ${SRC_REMOTE_FS} -> ${DST_REMOTE_FS}"
-${SYNC_TOOL} ${SYNC_OPTIONS:--archive} ${SRC_LOCAL_FS}/ ${DST_LOCAL_FS}/
-res=$?
-if [ ${res} -eq 23 ]; then
-   echo "WARNING: ignoring error ${res}"
-   res=0
-fi
-exit_on_error ${res} "Syncing failed with error $?"
+# do the source archive
+echo "Archiving ${SRC_REMOTE_FS}${SRC_REMOTE_PATH} -> ${SRC_ARCHIVE_FILE}"
+${ARCHIVE_TOOL} czvf ${SRC_ARCHIVE_FILE} ${SRC_LOCAL_FS}/
+exit_on_error $? "Archiving source failed with error $?"
+
+# do the destination archive 
+echo "Archiving ${DST_REMOTE_FS}${DST_REMOTE_PATH} -> ${DST_ARCHIVE_FILE}"
+${ARCHIVE_TOOL} czvf ${DST_ARCHIVE_FILE} ${DST_LOCAL_FS}/
+exit_on_error $? "Archiving destination failed with error $?"
 
 # unmount the mounted filesystems
 ${UNMOUNT_TOOL} ${SRC_LOCAL_FS}
