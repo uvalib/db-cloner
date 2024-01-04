@@ -17,8 +17,8 @@ ensure_tool_available ${RESTORE_TOOL}
 COMPRESS_TOOL=gzip
 ensure_tool_available ${COMPRESS_TOOL}
 
-DUMP_OPTIONS="--flush-privileges --routines"
-RESTORE_OPTIONS=""
+DUMP_OPTIONS="--flush-privileges --routines --single-transaction --skip-lock-tables"
+RESTORE_OPTIONS="-A"
 
 # validate the source environment
 ensure_var_defined "${SRC_DBHOST}" "SRC_DBHOST"
@@ -89,7 +89,7 @@ exit_on_error $? "Rewrite failed with error $?"
 # restore the source to the destination
 #
 echo "Restoring dataset (${DST_DBNAME} @ ${DST_DBHOST})"
-${RESTORE_TOOL} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < ${RESTORE_FILE}
+${RESTORE_TOOL} ${RESTORE_OPTIONS} -h ${DST_DBHOST} -P ${DST_DBPORT} -u ${DST_DBUSER} ${DST_DBPASSWD_OPT} ${DST_DBNAME} < ${RESTORE_FILE}
 exit_on_error $? "Restore dataset failed with error $?"
 
 # compress the files
